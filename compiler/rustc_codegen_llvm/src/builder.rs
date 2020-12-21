@@ -1485,6 +1485,21 @@ impl Builder<'a, 'll, 'tcx> {
         }
     }
 
+    pub fn scoped_atomic_fence(
+        &mut self,
+        order: rustc_codegen_ssa::common::AtomicOrdering,
+        scope: &str,
+    ) {
+        unsafe {
+            llvm::LLVMRustBuildScopedAtomicFence(
+                self.llbuilder,
+                AtomicOrdering::from_generic(order),
+                scope.as_ptr().cast(),
+                scope.len() as _,
+            );
+        }
+    }
+
     fn wasm_and_missing_nontrapping_fptoint(&self) -> bool {
         self.sess().target.target.arch == "wasm32"
             && !self.sess().target_features.contains(&sym::nontrapping_dash_fptoint)

@@ -61,60 +61,26 @@ extern "rust-intrinsic" {
     pub fn geobacter_amdgpu_workgroup_z_id() -> u32;
 }
 
-/// Scoped atomic fences. These are slower workarounds because another patch is
-/// required for the proper scopes.
+/// Scoped atomic fences.
 #[cfg(stage2)]
-mod atomic_scoped_fences_workarounds {
-    use crate::sync::atomic::Ordering;
+extern "rust-intrinsic" {
+    pub fn atomic_scoped_fence_singlethread_acq();
+    pub fn atomic_scoped_fence_singlethread_rel();
+    pub fn atomic_scoped_fence_singlethread_acqrel();
+    pub fn atomic_scoped_fence_singlethread_seqcst();
 
-    pub unsafe fn atomic_scoped_fence_singlethread_acq() {
-        crate::sync::atomic::fence(Ordering::Acquire);
-    }
-    pub unsafe fn atomic_scoped_fence_singlethread_rel() {
-        crate::sync::atomic::fence(Ordering::Release);
-    }
-    pub unsafe fn atomic_scoped_fence_singlethread_acqrel() {
-        crate::sync::atomic::fence(Ordering::AcqRel);
-    }
-    pub unsafe fn atomic_scoped_fence_singlethread_seqcst() {
-        crate::sync::atomic::fence(Ordering::SeqCst);
-    }
-    pub unsafe fn atomic_scoped_fence_wavefront_acq() {
-        crate::sync::atomic::fence(Ordering::Acquire);
-    }
-    pub unsafe fn atomic_scoped_fence_wavefront_rel() {
-        crate::sync::atomic::fence(Ordering::Release);
-    }
-    pub unsafe fn atomic_scoped_fence_wavefront_acqrel() {
-        crate::sync::atomic::fence(Ordering::AcqRel);
-    }
-    pub unsafe fn atomic_scoped_fence_wavefront_seqcst() {
-        crate::sync::atomic::fence(Ordering::SeqCst);
-    }
-    pub unsafe fn atomic_scoped_fence_workgroup_acq() {
-        crate::sync::atomic::fence(Ordering::Acquire);
-    }
-    pub unsafe fn atomic_scoped_fence_workgroup_rel() {
-        crate::sync::atomic::fence(Ordering::Release);
-    }
-    pub unsafe fn atomic_scoped_fence_workgroup_acqrel() {
-        crate::sync::atomic::fence(Ordering::AcqRel);
-    }
-    pub unsafe fn atomic_scoped_fence_workgroup_seqcst() {
-        crate::sync::atomic::fence(Ordering::SeqCst);
-    }
-    pub unsafe fn atomic_scoped_fence_agent_acq() {
-        crate::sync::atomic::fence(Ordering::Acquire);
-    }
-    pub unsafe fn atomic_scoped_fence_agent_rel() {
-        crate::sync::atomic::fence(Ordering::Release);
-    }
-    pub unsafe fn atomic_scoped_fence_agent_acqrel() {
-        crate::sync::atomic::fence(Ordering::AcqRel);
-    }
-    pub unsafe fn atomic_scoped_fence_agent_seqcst() {
-        crate::sync::atomic::fence(Ordering::SeqCst);
-    }
+    pub fn atomic_scoped_fence_wavefront_acq();
+    pub fn atomic_scoped_fence_wavefront_rel();
+    pub fn atomic_scoped_fence_wavefront_acqrel();
+    pub fn atomic_scoped_fence_wavefront_seqcst();
+
+    pub fn atomic_scoped_fence_workgroup_acq();
+    pub fn atomic_scoped_fence_workgroup_rel();
+    pub fn atomic_scoped_fence_workgroup_acqrel();
+    pub fn atomic_scoped_fence_workgroup_seqcst();
+
+    pub fn atomic_scoped_fence_agent_acq();
+    pub fn atomic_scoped_fence_agent_rel();
+    pub fn atomic_scoped_fence_agent_acqrel();
+    pub fn atomic_scoped_fence_agent_seqcst();
 }
-#[cfg(stage2)]
-pub use self::atomic_scoped_fences_workarounds::*;

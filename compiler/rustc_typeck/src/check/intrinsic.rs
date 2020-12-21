@@ -11,8 +11,8 @@ use rustc_errors::struct_span_err;
 use rustc_hir as hir;
 use rustc_hir::def_id::DefId;
 use rustc_middle::traits::{ObligationCause, ObligationCauseCode};
-use rustc_middle::ty::subst::Subst;
 use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::subst::Subst;
 use rustc_span::symbol::{kw, sym, Symbol};
 use rustc_target::spec::abi::Abi;
 
@@ -126,7 +126,10 @@ pub fn check_intrinsic_type(tcx: TyCtxt<'_>, it: &hir::ForeignItem<'_>) {
         })
     };
 
-    let (n_tps, inputs, output, unsafety) = if name_str.starts_with("atomic_") {
+    let (n_tps, inputs, output, unsafety) = if name_str.starts_with("atomic_scoped_fence_") {
+        // We don't check the scope here as that's "OS" defined.
+        (0, Vec::new(), tcx.mk_unit(), hir::Unsafety::Unsafe)
+    } else if name_str.starts_with("atomic_") {
         let split: Vec<&str> = name_str.split('_').collect();
         assert!(split.len() >= 2, "Atomic intrinsic in an incorrect format");
 

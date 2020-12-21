@@ -409,6 +409,15 @@ LLVMRustBuildAtomicFence(LLVMBuilderRef B, LLVMAtomicOrdering Order,
   return wrap(unwrap(B)->CreateFence(fromRust(Order), fromRust(Scope)));
 }
 
+extern "C" LLVMValueRef
+LLVMRustBuildScopedAtomicFence(LLVMBuilderRef B, LLVMAtomicOrdering Order,
+                               const uint8_t* Scope, unsigned ScopeLen) {
+  auto ScopeName = StringRef((const char*)Scope, (size_t)ScopeLen);
+  auto IRB = unwrap(B);
+  auto ID = IRB->getContext().getOrInsertSyncScopeID(ScopeName);
+  return wrap(IRB->CreateFence(fromRust(Order), ID));
+}
+
 enum class LLVMRustAsmDialect {
   Att,
   Intel,

@@ -302,6 +302,33 @@ impl IntrinsicCallMethods<'tcx> for Builder<'a, 'll, 'tcx> {
                     Err(()) => return,
                 }
             }
+            // Scope specific atomic fences. The specific meaning of the scope string
+            // is target and os defined.
+            // This requires that atomic intrinsics follow a specific naming pattern:
+            // "atomic_scoped_fence_<scope>_<ordering>"
+            _ if name_str.starts_with("atomic_scoped_fence_") => {
+                use rustc_codegen_ssa::common::AtomicOrdering::*;
+
+                let split: Vec<&str> = name_str.split('_').skip(3).collect();
+                if split.len() < 2 {
+                    self.sess().fatal("Atomic intrinsic not in correct format");
+                }
+
+                let scope = split[0];
+
+                let order = match split[1] {
+                    "unordered" => Unordered,
+                    "relaxed"   => Monotonic,
+                    "acq"       => Acquire,
+                    "rel"       => Release,
+                    "acqrel"    => AcquireRelease,
+                    "seqcst"    => SequentiallyConsistent,
+                    _ => self.sess().fatal("unknown ordering in atomic intrinsic"),
+                };
+
+                self.scoped_atomic_fence(order, scope);
+                return;
+            },
 
             sym::amdgcn_dispatch_ptr => {
                 // This intrinsic returns a pointer in the const addr space

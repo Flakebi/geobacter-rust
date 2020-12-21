@@ -1667,6 +1667,12 @@ extern "C" {
         Order: AtomicOrdering,
         Scope: SynchronizationScope,
     );
+    pub fn LLVMRustBuildScopedAtomicFence(
+        B: &Builder<'_>,
+        Order: AtomicOrdering,
+        Scope: *const c_char,
+        ScopeLen: c_uint
+    );
 
     /// Writes a module to the specified path. Returns 0 on success.
     pub fn LLVMWriteBitcodeToFile(M: &Module, Path: *const c_char) -> c_int;
