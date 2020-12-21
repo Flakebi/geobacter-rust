@@ -1195,6 +1195,17 @@ impl<'a> Resolver<'a> {
         metadata_loader: &'a MetadataLoaderDyn,
         arenas: &'a ResolverArenas<'a>,
     ) -> Resolver<'a> {
+        let crate_loader = CrateLoader::new(session, metadata_loader, crate_name);
+        Self::new_with_cloader(session, krate, crate_name,
+                               arenas, crate_loader)
+    }
+    pub fn new_with_cloader(
+        session: &'a Session,
+        krate: &Crate,
+        crate_name: &str,
+        arenas: &'a ResolverArenas<'a>,
+        crate_loader: CrateLoader<'a>,
+    ) -> Resolver<'a> {
         let root_def_id = DefId::local(CRATE_DEF_INDEX);
         let root_module_kind = ModuleKind::Def(DefKind::Mod, root_def_id, kw::Invalid);
         let graph_root = arenas.alloc_module(ModuleData {
@@ -1312,7 +1323,7 @@ impl<'a> Resolver<'a> {
                 vis: ty::Visibility::Public,
             }),
 
-            crate_loader: CrateLoader::new(session, metadata_loader, crate_name),
+            crate_loader,
             macro_names: FxHashSet::default(),
             builtin_macros: Default::default(),
             registered_attrs,
