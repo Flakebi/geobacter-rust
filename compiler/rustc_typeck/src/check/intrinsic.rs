@@ -377,8 +377,14 @@ pub fn check_intrinsic_type(tcx: TyCtxt<'_>, it: &hir::ForeignItem<'_>) {
             }
 
             other => {
-                tcx.sess.emit_err(UnrecognizedIntrinsicFunction { span: it.span, name: other });
-                return;
+                if let Some(mirgen) = tcx.custom_intrinsic_mirgen(def_id) {
+                    (mirgen.generic_parameter_count(tcx),
+                     mirgen.inputs(tcx).iter().collect(),
+                     mirgen.output(tcx))
+                } else {
+                    tcx.sess.emit_err(UnrecognizedIntrinsicFunction { span: it.span, name: other });
+                    return;
+                }
             }
         };
         (n_tps, inputs, output, unsafety)

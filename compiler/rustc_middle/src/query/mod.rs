@@ -306,6 +306,28 @@ rustc_queries! {
             }
         }
 
+        /// If defined by the driver, returns the extra mir statements to codegen,
+        /// else returns `None`.
+        query custom_intrinsic_mirgen(key: DefId) -> Option<Lrc<dyn mir::CustomIntrinsicMirGen>> {
+            anon
+            no_hash
+
+            desc { |tcx| "asking for the custom MIR generator of `{}`", tcx.def_path_str(key) }
+        }
+        /// The monomorphized MIR for a custom intrinsic instance.
+        query custom_intrinsic_mir(inst: ty::Instance<'tcx>) -> Option<&'tcx mir::Body<'tcx>> {
+            anon
+
+            desc { |tcx| "asking for the custom MIR of `{}`", tcx.def_path_str(inst.def_id()) }
+        }
+
+        query specialization_data(inst: ty::Instance<'tcx>) -> Option<&'tcx [u8]> {
+            desc { |tcx| "asking for the specialization data of `{}`", tcx.def_path_str(inst.def_id()) }
+        }
+        query stubbed_instance(inst: ty::Instance<'tcx>) -> ty::Instance<'tcx> {
+            desc { |tcx| "asking for the stub of `{}`", tcx.def_path_str(inst.def_id()) }
+        }
+
         /// Returns coverage summary info for a function, after executing the `InstrumentCoverage`
         /// MIR pass (assuming the -Zinstrument-coverage option is enabled).
         query coverageinfo(key: DefId) -> mir::CoverageInfo {

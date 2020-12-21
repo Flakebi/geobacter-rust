@@ -178,6 +178,10 @@ fn compute_symbol_name(
             Node::ForeignItem(_) => true,
             _ => false,
         }
+    } else if let ty::InstanceDef::Intrinsic(_) = instance.def {
+        // custom intrinsics should never be foreign, otherwise
+        // generic parameters will cause duplicate symbols names.
+        tcx.custom_intrinsic_mir(instance).is_none()
     } else {
         tcx.is_foreign_item(def_id)
     };

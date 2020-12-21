@@ -36,3 +36,5 @@ features = ["nightly"]
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["fileapi", "psapi"] }
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

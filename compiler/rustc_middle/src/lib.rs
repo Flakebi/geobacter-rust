@@ -47,6 +47,7 @@
 #![feature(associated_type_bounds)]
 #![feature(rustc_attrs)]
 #![feature(int_error_matching)]
+#![feature(geobacter)]
 #![recursion_limit = "512"]
 
 #[macro_use]

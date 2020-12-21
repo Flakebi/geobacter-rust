@@ -152,6 +152,8 @@
 #![feature(const_caller_location)]
 #![feature(slice_ptr_get)]
 #![feature(no_niche)] // rust-lang/rust#68303
+#![feature(fn_traits)]
+#![feature(geobacter)]
 #![feature(unsafe_block_in_unsafe_fn)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
@@ -264,6 +266,8 @@ pub mod alloc;
 mod bool;
 mod tuple;
 mod unit;
+
+pub mod geobacter;
 
 #[stable(feature = "core_primitive", since = "1.43.0")]
 pub mod primitive;

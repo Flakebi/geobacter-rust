@@ -3581,6 +3581,26 @@ name = "rustc_fs_util"
 version = "0.0.0"
 
 [[package]]
+name = "rustc_geobacter"
+version = "0.0.0"
+dependencies = [
+ "rustc_ast",
+ "rustc_data_structures",
+ "rustc_errors",
+ "rustc_hir",
+ "rustc_index",
+ "rustc_macros",
+ "rustc_middle",
+ "rustc_mir",
+ "rustc_serialize",
+ "rustc_session",
+ "rustc_span",
+ "rustc_target",
+ "smallvec 1.4.2",
+ "tracing",
+]
+
+[[package]]
 name = "rustc_graphviz"
 version = "0.0.0"
 
@@ -3673,6 +3693,7 @@ dependencies = [
  "rustc_data_structures",
  "rustc_errors",
  "rustc_expand",
+ "rustc_geobacter",
  "rustc_hir",
  "rustc_incremental",
  "rustc_lint",

@@ -1,0 +1,35 @@
+[package]
+authors = ["The Rust Project Developers"]
+name = "rustc_geobacter"
+version = "0.0.0"
+edition = "2018"
+
+[lib]
+name = "rustc_geobacter"
+path = "lib.rs"
+doctest = false
+
+[dependencies]
+tracing = "0.1"
+smallvec = { version = "1.0", features = ["union", "may_dangle"] }
+rustc_ast = { path = "../rustc_ast" }
+rustc_data_structures = { path = "../rustc_data_structures" }
+rustc_errors = { path = "../rustc_errors" }
+rustc_hir = { path = "../rustc_hir" }
+rustc_index = { path = "../rustc_index" }
+rustc_macros = { path = "../rustc_macros" }
+rustc_middle = { path = "../rustc_middle" }
+rustc_mir = { path = "../rustc_mir" }
+rustc_serialize = { path = "../rustc_serialize" }
+rustc_session = { path = "../rustc_session" }
+rustc_span = { path = "../rustc_span" }
+rustc_target = { path = "../rustc_target" }
+
+[features]
+# only defines core Geobacter intrinsics
+bootstrap = []
+# defines tier 2 intrinsics, which themselves depend on the bootstrap intrinsics. This
+# tier should include all intrinsics impls
+stage1 = []
+# All intrinsics
+stage2 = []

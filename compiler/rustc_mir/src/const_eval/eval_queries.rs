@@ -293,7 +293,7 @@ pub fn eval_to_allocation_raw_provider<'tcx>(
         MemoryExtra { can_access_statics: is_static },
     );
 
-    let res = ecx.load_mir(cid.instance.def, cid.promoted);
+    let res = ecx.load_mir(cid.instance, cid.promoted);
     match res.and_then(|body| eval_body_using_ecx(&mut ecx, cid, &body)) {
         Err(error) => {
             let err = ConstEvalErr::new(&ecx, error, None);

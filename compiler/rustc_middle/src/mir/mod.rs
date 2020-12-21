@@ -54,7 +54,7 @@ mod type_foldable;
 pub mod visit;
 
 /// Types for locals
-type LocalDecls<'tcx> = IndexVec<Local, LocalDecl<'tcx>>;
+pub type LocalDecls<'tcx> = IndexVec<Local, LocalDecl<'tcx>>;
 
 pub trait HasLocalDecls<'tcx> {
     fn local_decls(&self) -> &LocalDecls<'tcx>;
@@ -2673,4 +2673,34 @@ impl Location {
             dominators.is_dominated_by(other.block, self.block)
         }
     }
+}
+
+pub trait CustomIntrinsicMirGen: Sync + Send {
+    /// Codegen a plugin-defined intrinsic. This is intended to be used to
+    /// "return" values based on the monomorphized and erased types of the
+    /// function call. Codegen will codegen the `extra_stmts` and then insert
+    /// an unconditional branch to the exit block.
+    ///
+    /// Consider this to be highly unstable; it will likely change without
+    /// warning. There is also no spec for this, it is 100% implementation
+    /// defined, and may not be implemented at all for some codegen backends.
+    ///
+    /// If the codegen backend is multithreaded, this will be called from
+    /// any number of threads, hence `Sync + Send`.
+    ///
+    /// YOU ARE RESPONSIBLE FOR THE SAFETY OF THE EXTRA STATEMENTS.
+    /// You have been warned. Good luck, have fun.
+    fn mirgen_simple_intrinsic<'tcx>(&self,
+                                     tcx: TyCtxt<'tcx>,
+                                     instance: ty::Instance<'tcx>,
+                                     mir: &mut Body<'tcx>);
+
+    /// The following are used for typeck-ing:
+
+    /// The number of generic parameters expected.
+    fn generic_parameter_count<'tcx>(&self, tcx: TyCtxt<'tcx>) -> usize;
+    /// The types of the input args.
+    fn inputs<'tcx>(&self, tcx: TyCtxt<'tcx>) -> &'tcx List<Ty<'tcx>>;
+    /// The return type.
+    fn output<'tcx>(&self, tcx: TyCtxt<'tcx>) -> Ty<'tcx>;
 }

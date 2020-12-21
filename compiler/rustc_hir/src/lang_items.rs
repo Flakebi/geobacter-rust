@@ -329,4 +329,15 @@ language_item_table! {
     Range,                   sym::Range,               range_struct,               Target::Struct;
     RangeToInclusive,        sym::RangeToInclusive,    range_to_inclusive_struct,  Target::Struct;
     RangeTo,                 sym::RangeTo,             range_to_struct,            Target::Struct;
+
+    // Geobacter lang items:
+    SpirvBuiltin,            sym::spirv_builtin,       spirv_builtin_ty,           Target::Struct;
+    SpirvInput,              sym::spirv_input,         spirv_input_ty,             Target::Struct;
+    SpirvOutput,             sym::spirv_output,        spirv_output_ty,            Target::Struct;
+    SpirvShaderInput,        sym::spirv_shader_input,  spirv_shader_input_ty,      Target::Struct;
+    SpirvShaderOutput,       sym::spirv_shader_output, spirv_shader_output_ty,     Target::Struct;
+    SpirvBufferObject,       sym::spirv_buffer_object, spirv_buffer_object_ty,     Target::Struct;
+    SpirvUniformObject,      sym::spirv_uniform_object,spirv_uniform_object_ty,    Target::Struct;
+    SpirvTexture,            sym::spirv_texture,       spirv_texture_ty,           Target::Struct;
+    SpirvSampler,            sym::spirv_sampler,       spirv_sampler_ty,           Target::Struct;
 }

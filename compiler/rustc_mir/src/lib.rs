@@ -50,6 +50,7 @@ pub fn provide(providers: &mut Providers) {
     const_eval::provide(providers);
     shim::provide(providers);
     transform::provide(providers);
+    monomorphize::provide(providers);
     monomorphize::partitioning::provide(providers);
     monomorphize::polymorphize::provide(providers);
     providers.eval_to_const_value_raw = const_eval::eval_to_const_value_raw_provider;

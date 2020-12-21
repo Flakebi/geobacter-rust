@@ -769,6 +769,10 @@ fn visit_instance_use<'tcx>(
             if !is_direct_call {
                 bug!("{:?} being reified", instance);
             }
+
+            if let Some(_mir) = tcx.custom_intrinsic_mir(instance) {
+                output.push(create_fn_mono_item(tcx, instance, source));
+            }
         }
         ty::InstanceDef::DropGlue(_, None) => {
             // Don't need to emit noop drop glue if we are calling directly.
@@ -1237,7 +1241,7 @@ fn collect_neighbours<'tcx>(
     output: &mut Vec<Spanned<MonoItem<'tcx>>>,
 ) {
     debug!("collect_neighbours: {:?}", instance.def_id());
-    let body = tcx.instance_mir(instance.def);
+    let body = tcx.instance_mir(instance);
 
     MirNeighborCollector { tcx, body: &body, output, instance }.visit_body(&body);
 }

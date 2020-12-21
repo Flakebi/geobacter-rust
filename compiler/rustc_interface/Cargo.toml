@@ -42,6 +42,7 @@ rustc_privacy = { path = "../rustc_privacy" }
 rustc_resolve = { path = "../rustc_resolve" }
 rustc_trait_selection = { path = "../rustc_trait_selection" }
 rustc_ty = { path = "../rustc_ty" }
+rustc_geobacter = { path = "../rustc_geobacter" }
 tempfile = "3.0.5"
 
 [target.'cfg(windows)'.dependencies]

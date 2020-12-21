@@ -628,9 +628,14 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
         let arg_count = fn_abi.args.len() + fn_abi.ret.is_indirect() as usize;
         let mut llargs = Vec::with_capacity(arg_count);
 
+        // Custom intrinsics are treated as-if they were normal functions here.
+        let is_custom_intrinsic = intrinsic.and_then(|_| instance )
+            .map(|instance| bx.tcx().custom_intrinsic_mir(instance).is_some() )
+            .unwrap_or_default();
+
         // Prepare the return value destination
         let ret_dest = if let Some((dest, _)) = *destination {
-            let is_intrinsic = intrinsic.is_some();
+            let is_intrinsic = intrinsic.is_some() && !is_custom_intrinsic;
             self.make_return_dest(&mut bx, dest, &fn_abi.ret, &mut llargs, is_intrinsic)
         } else {
             ReturnDest::Nothing
@@ -651,7 +656,8 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
             return;
         }
 
-        if intrinsic.is_some() && intrinsic != Some(sym::drop_in_place) {
+        if intrinsic.is_some() && intrinsic != Some(sym::drop_in_place) &&
+            !is_custom_intrinsic {
             let intrinsic = intrinsic.unwrap();
             let dest = match ret_dest {
                 _ if fn_abi.ret.is_indirect() => llargs[0],

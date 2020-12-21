@@ -140,7 +140,7 @@ pub fn codegen_mir<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>>(
 
     let llfn = cx.get_fn(instance);
 
-    let mir = cx.tcx().instance_mir(instance.def);
+    let mir = cx.tcx().instance_mir(instance);
 
     let fn_abi = FnAbi::of_instance(cx, instance, &[]);
     debug!("fn_abi: {:?}", fn_abi);

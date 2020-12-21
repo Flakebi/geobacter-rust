@@ -2150,6 +2150,10 @@ impl<'tcx> TyCtxt<'tcx> {
     pub fn mk_static_str(self) -> Ty<'tcx> {
         self.mk_imm_ref(self.lifetimes.re_static, self.types.str_)
     }
+    #[inline]
+    pub fn mk_static_slice(self, elem: Ty<'tcx>) -> Ty<'tcx> {
+        self.mk_imm_ref(self.lifetimes.re_static, self.mk_slice(elem))
+    }
 
     #[inline]
     pub fn mk_adt(self, def: &'tcx AdtDef, substs: SubstsRef<'tcx>) -> Ty<'tcx> {

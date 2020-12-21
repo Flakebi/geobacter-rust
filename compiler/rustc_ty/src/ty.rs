@@ -423,7 +423,10 @@ fn instance_def_size_estimate<'tcx>(
 
     match instance_def {
         InstanceDef::Item(..) | InstanceDef::DropGlue(..) => {
-            let mir = tcx.instance_mir(instance_def);
+            let mir = tcx.instance_mir(ty::Instance {
+                def: instance_def,
+                substs: tcx.intern_substs(&[]),
+            });
             mir.basic_blocks().iter().map(|bb| bb.statements.len()).sum()
         }
         // Estimate the size of other compiler-generated shims to be 1.

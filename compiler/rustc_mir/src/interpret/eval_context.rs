@@ -424,11 +424,11 @@ impl<'mir, 'tcx: 'mir, M: Machine<'mir, 'tcx>> InterpCx<'mir, 'tcx, M> {
 
     pub fn load_mir(
         &self,
-        instance: ty::InstanceDef<'tcx>,
+        instance: ty::Instance<'tcx>,
         promoted: Option<mir::Promoted>,
     ) -> InterpResult<'tcx, &'tcx mir::Body<'tcx>> {
         // do not continue if typeck errors occurred (can only occur in local crate)
-        let def = instance.with_opt_param();
+        let def = instance.def.with_opt_param();
         if let Some(def) = def.as_local() {
             if self.tcx.has_typeck_results(def.did) {
                 if let Some(error_reported) = self.tcx.typeck_opt_const_arg(def).tainted_by_errors {
@@ -440,7 +440,7 @@ impl<'mir, 'tcx: 'mir, M: Machine<'mir, 'tcx>> InterpCx<'mir, 'tcx, M> {
         if let Some(promoted) = promoted {
             return Ok(&self.tcx.promoted_mir_of_opt_const_arg(def)[promoted]);
         }
-        match instance {
+        match instance.def {
             ty::InstanceDef::Item(def) => {
                 if self.tcx.is_mir_available(def.did) {
                     if let Some((did, param_did)) = def.as_const_arg() {
