@@ -83,6 +83,7 @@ fn main() {
         "webassembly",
         "msp430",
         "sparc",
+        "spirv",
         "nvptx",
         "hexagon",
     ];

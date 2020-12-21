@@ -148,6 +148,13 @@ pub fn initialize_available_targets() {
         LLVMInitializeSparcAsmParser
     );
     init_target!(
+        llvm_component = "spirv",
+        LLVMInitializeSPIRVTargetInfo,
+        LLVMInitializeSPIRVTarget,
+        LLVMInitializeSPIRVTargetMC,
+        LLVMInitializeSPIRVAsmPrinter
+    );
+    init_target!(
         llvm_component = "nvptx",
         LLVMInitializeNVPTXTargetInfo,
         LLVMInitializeNVPTXTarget,
