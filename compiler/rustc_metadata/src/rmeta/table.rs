@@ -11,7 +11,7 @@ use tracing::debug;
 /// Used mainly for Lazy positions and lengths.
 /// Unchecked invariant: `Self::default()` should encode as `[0; BYTE_LEN]`,
 /// but this has no impact on safety.
-pub(super) trait FixedSizeEncoding: Default {
+pub trait FixedSizeEncoding: Default {
     const BYTE_LEN: usize;
 
     // FIXME(eddyb) convert to and from `[u8; Self::BYTE_LEN]` instead,
@@ -119,7 +119,7 @@ impl<T> FixedSizeEncoding for Option<Lazy<[T]>> {
 /// A total of `(max_idx + 1) * <Option<T> as FixedSizeEncoding>::BYTE_LEN` bytes
 /// are used for a table, where `max_idx` is the largest index passed to
 /// `TableBuilder::set`.
-pub(super) struct Table<I: Idx, T>
+pub struct Table<I: Idx, T>
 where
     Option<T>: FixedSizeEncoding,
 {
@@ -130,7 +130,7 @@ where
 }
 
 /// Helper for constructing a table's serialization (also see `Table`).
-pub(super) struct TableBuilder<I: Idx, T>
+pub struct TableBuilder<I: Idx, T>
 where
     Option<T>: FixedSizeEncoding,
 {

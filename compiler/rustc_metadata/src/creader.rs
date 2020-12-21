@@ -41,6 +41,20 @@ pub struct CStore {
     /// This crate has a `#[global_allocator]` item.
     has_global_allocator: bool,
 }
+impl Default for CStore {
+    fn default() -> Self {
+        CStore {
+            // We add an empty entry for LOCAL_CRATE (which maps to zero) in
+            // order to make array indices in `metas` match with the
+            // corresponding `CrateNum`. This first entry will always remain
+            // `None`.
+            metas: IndexVec::from_elem_n(None, 1),
+            injected_panic_runtime: None,
+            allocator_kind: None,
+            has_global_allocator: false,
+        }
+    }
+}
 
 pub struct CrateLoader<'a> {
     // Immutable configuration.
@@ -69,7 +83,7 @@ enum LoadResult {
 
 /// A reference to `CrateMetadata` that can also give access to whole crate store when necessary.
 #[derive(Clone, Copy)]
-crate struct CrateMetadataRef<'a> {
+pub struct CrateMetadataRef<'a> {
     pub cdata: &'a CrateMetadata,
     pub cstore: &'a CStore,
 }
@@ -115,28 +129,28 @@ impl<'a> std::fmt::Debug for CrateDump<'a> {
 }
 
 impl CStore {
-    crate fn from_tcx(tcx: TyCtxt<'_>) -> &CStore {
+    pub fn from_tcx(tcx: TyCtxt<'_>) -> &CStore {
         tcx.cstore_as_any().downcast_ref::<CStore>().expect("`tcx.cstore` is not a `CStore`")
     }
 
-    fn alloc_new_crate_num(&mut self) -> CrateNum {
+    pub fn alloc_new_crate_num(&mut self) -> CrateNum {
         self.metas.push(None);
         CrateNum::new(self.metas.len() - 1)
     }
 
-    crate fn get_crate_data(&self, cnum: CrateNum) -> CrateMetadataRef<'_> {
+    pub fn get_crate_data(&self, cnum: CrateNum) -> CrateMetadataRef<'_> {
         let cdata = self.metas[cnum]
             .as_ref()
             .unwrap_or_else(|| panic!("Failed to get crate data for {:?}", cnum));
         CrateMetadataRef { cdata, cstore: self }
     }
 
-    fn set_crate_data(&mut self, cnum: CrateNum, data: CrateMetadata) {
+    pub fn set_crate_data(&mut self, cnum: CrateNum, data: CrateMetadata) {
         assert!(self.metas[cnum].is_none(), "Overwriting crate metadata entry");
         self.metas[cnum] = Some(Lrc::new(data));
     }
 
-    crate fn iter_crate_data(&self, mut f: impl FnMut(CrateNum, &CrateMetadata)) {
+    pub fn iter_crate_data(&self, mut f: impl FnMut(CrateNum, &CrateMetadata)) {
         for (cnum, data) in self.metas.iter_enumerated() {
             if let Some(data) = data {
                 f(cnum, data);
@@ -196,16 +210,7 @@ impl<'a> CrateLoader<'a> {
             sess,
             metadata_loader,
             local_crate_name: Symbol::intern(local_crate_name),
-            cstore: CStore {
-                // We add an empty entry for LOCAL_CRATE (which maps to zero) in
-                // order to make array indices in `metas` match with the
-                // corresponding `CrateNum`. This first entry will always remain
-                // `None`.
-                metas: IndexVec::from_elem_n(None, 1),
-                injected_panic_runtime: None,
-                allocator_kind: None,
-                has_global_allocator: false,
-            },
+            cstore: CStore::default(),
             used_extern_options: Default::default(),
         }
     }
@@ -218,7 +223,7 @@ impl<'a> CrateLoader<'a> {
         self.cstore
     }
 
-    fn existing_match(&self, name: Symbol, hash: Option<Svh>, kind: PathKind) -> Option<CrateNum> {
+    pub fn existing_match(&self, name: Symbol, hash: Option<Svh>, kind: PathKind) -> Option<CrateNum> {
         let mut ret = None;
         self.cstore.iter_crate_data(|cnum, data| {
             if data.name() != name {
