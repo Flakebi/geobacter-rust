@@ -972,6 +972,10 @@ pub struct GlobalCtxt<'tcx> {
     /// `#[rustc_const_stable]` and `#[rustc_const_unstable]` attributes
     const_stability_interner: ShardedHashMap<&'tcx attr::ConstStability, ()>,
 
+    /// Driver specific data. Placed here for mergability.
+    /// Note: This is not allowed to live after `TyCtxt::create_and_enter` returns.
+    driver_data: Option<Box<dyn Any + Send + Sync>>,
+
     /// Stores the value of constants (and deduplicates the actual memory)
     allocation_interner: ShardedHashMap<&'tcx Allocation, ()>,
 
@@ -1085,6 +1089,7 @@ impl<'tcx> TyCtxt<'tcx> {
         on_disk_query_result_cache: query::OnDiskCache<'tcx>,
         crate_name: &str,
         output_filenames: &OutputFilenames,
+        driver_data: Option<Box<dyn Any + Send + Sync>>,
     ) -> GlobalCtxt<'tcx> {
         let data_layout = TargetDataLayout::parse(&s.target.target).unwrap_or_else(|err| {
             s.fatal(&err);
@@ -1121,6 +1126,9 @@ impl<'tcx> TyCtxt<'tcx> {
         }
 
         GlobalCtxt {
+            // placed up top for mergability.
+            driver_data,
+
             sess: s,
             lint_store,
             cstore,
@@ -1177,6 +1185,14 @@ impl<'tcx> TyCtxt<'tcx> {
         self.sess
             .delay_span_bug(DUMMY_SP, "ty::ConstKind::Error constructed but no error reported.");
         self.mk_const(ty::Const { val: ty::ConstKind::Error(DelaySpanBugEmitted(())), ty })
+    }
+
+    pub fn with_driver_data<F, R>(self, f: F) -> Option<R>
+        where F: for<'b> FnOnce(Self, &'b (dyn Any + Send + Sync)) -> R
+    {
+        self.driver_data.as_ref()
+          .map(|v| &**v )
+          .map(move |v| f(self, v) )
     }
 
     pub fn consider_optimizing<T: Fn() -> String>(self, msg: T) -> bool {
