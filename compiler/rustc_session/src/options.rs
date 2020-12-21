@@ -829,6 +829,8 @@ options! {DebuggingOptions, DebuggingSetter, basic_debugging_options,
 
     allow_features: Option<Vec<String>> = (None, parse_opt_comma_list, [TRACKED],
         "only allow the listed language features to be enabled in code (space separated)"),
+    always_emit_metadata: bool = (false, parse_bool, [TRACKED],
+        "include crate metadata in crate types which otherwise wouldn't include it"),
     always_encode_mir: bool = (false, parse_bool, [TRACKED],
         "encode MIR of all functions into the crate metadata (default: no)"),
     asm_comments: bool = (false, parse_bool, [TRACKED],

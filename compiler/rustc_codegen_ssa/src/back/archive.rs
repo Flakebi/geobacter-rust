@@ -42,6 +42,10 @@ pub trait ArchiveBuilder<'a> {
     fn remove_file(&mut self, name: &str);
     fn src_files(&mut self) -> Vec<String>;
 
+    fn iter<F>(&mut self, f: F) -> io::Result<()>
+        where F: FnMut(&str, &[u8]) -> io::Result<()>,
+              Self: Sized;
+
     fn add_rlib(
         &mut self,
         path: &Path,

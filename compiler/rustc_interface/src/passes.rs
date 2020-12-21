@@ -931,6 +931,12 @@ fn encode_and_write_metadata(
         .crate_types()
         .iter()
         .map(|ty| match *ty {
+            CrateType::Executable |
+            CrateType::Staticlib |
+            CrateType::Cdylib |
+            CrateType::Rlib if tcx.sess.opts.debugging_opts.always_emit_metadata => {
+                MetadataKind::Compressed
+            }
             CrateType::Executable | CrateType::Staticlib | CrateType::Cdylib => MetadataKind::None,
 
             CrateType::Rlib => MetadataKind::Uncompressed,

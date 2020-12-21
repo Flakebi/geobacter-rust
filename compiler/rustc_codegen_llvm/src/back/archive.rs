@@ -98,6 +98,34 @@ impl<'a> ArchiveBuilder<'a> for LlvmArchiveBuilder<'a> {
             .collect()
     }
 
+    fn iter<F>(&mut self, mut f: F) -> io::Result<()>
+        where F: FnMut(&str, &[u8]) -> io::Result<()>,
+              Self: Sized,
+    {
+        if self.src_archive().is_none() {
+            return Ok(());
+        }
+
+        let archive = self.src_archive
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .unwrap();
+
+        let iter = archive.iter()
+            .filter_map(|child| child.ok())
+            .filter(is_relevant_child)
+            .filter(|child| {
+                !self.removals.iter().any(|x| {
+                    x == child.name().unwrap()
+                })
+            });
+        for child in iter {
+            f(child.name().unwrap(), child.data())?;
+        }
+        Ok(())
+    }
+
     /// Adds all of the contents of a native library to this archive. This will
     /// search in the relevant locations for a library named `name`.
     fn add_native_library(&mut self, name: Symbol) {
