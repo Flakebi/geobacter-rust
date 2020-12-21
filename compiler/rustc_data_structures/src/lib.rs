@@ -37,6 +37,11 @@ extern crate cfg_if;
 #[macro_use]
 extern crate rustc_macros;
 
+#[cfg(parallel_compiler)]
+pub extern crate rayon;
+#[cfg(parallel_compiler)]
+pub extern crate rayon_core;
+
 #[inline(never)]
 #[cold]
 pub fn cold_path<F: FnOnce() -> R, R>(f: F) -> R {
