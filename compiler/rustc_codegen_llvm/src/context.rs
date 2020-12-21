@@ -905,6 +905,10 @@ impl CodegenCx<'b, 'tcx> {
         ifn!("llvm.assume", fn(i1) -> void);
         ifn!("llvm.prefetch", fn(i8p, t_i32, t_i32, t_i32) -> void);
 
+        // intrinsics which have address space requirements.
+        ifn!("llvm.amdgcn.dispatch.ptr", fn() -> self.type_const_i8p());
+        ifn!("llvm.amdgcn.queue.ptr", fn() -> self.type_const_i8p());
+
         // variadic intrinsics
         ifn!("llvm.va_start", fn(i8p) -> void);
         ifn!("llvm.va_end", fn(i8p) -> void);
