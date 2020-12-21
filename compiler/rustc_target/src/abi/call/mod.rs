@@ -18,6 +18,7 @@ mod riscv;
 mod s390x;
 mod sparc;
 mod sparc64;
+mod spirv;
 mod wasm32;
 mod wasm32_bindgen_compat;
 mod x86;
@@ -598,6 +599,7 @@ impl<'a, Ty> FnAbi<'a, Ty> {
             "nvptx64" => nvptx64::compute_abi_info(self),
             "hexagon" => hexagon::compute_abi_info(self),
             "riscv32" | "riscv64" => riscv::compute_abi_info(cx, self),
+            "spirv" | "spirv64" => spirv::compute_abi_info(cx, self),
             "wasm32" if cx.target_spec().target_os != "emscripten" => {
                 wasm32_bindgen_compat::compute_abi_info(self)
             }
