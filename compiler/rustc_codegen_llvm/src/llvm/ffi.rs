@@ -50,6 +50,7 @@ pub enum CallConv {
     AvrNonBlockingInterrupt = 84,
     AvrInterrupt = 85,
     AmdGpuKernel = 91,
+    SpirKernel = 76,
 }
 
 /// LLVMRustLinkage

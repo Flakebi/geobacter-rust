@@ -445,6 +445,8 @@ declare_features! (
     /// Allows using `reason` in lint attributes and the `#[expect(lint)]` lint check.
     (active, lint_reasons, "1.31.0", Some(54503), None),
 
+    (active, abi_spir_kernel, "1.31.0", None, None),
+
     /// Allows exhaustive integer pattern matching on `usize` and `isize`.
     (active, precise_pointer_size_matching, "1.32.0", Some(56354), None),
 

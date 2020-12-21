@@ -528,6 +528,8 @@ pub enum Conv {
     AmdGpuKernel,
     AvrInterrupt,
     AvrNonBlockingInterrupt,
+
+    SpirKernel,
 }
 
 /// Metadata describing how the arguments to a native function

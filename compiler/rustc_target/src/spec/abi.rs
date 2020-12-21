@@ -33,6 +33,7 @@ pub enum Abi {
     Msp430Interrupt,
     X86Interrupt,
     AmdGpuKernel,
+    SpirKernel,
     EfiApi,
     AvrInterrupt,
     AvrNonBlockingInterrupt,
@@ -74,6 +75,7 @@ const AbiDatas: &[AbiData] = &[
     AbiData { abi: Abi::Msp430Interrupt, name: "msp430-interrupt", generic: false },
     AbiData { abi: Abi::X86Interrupt, name: "x86-interrupt", generic: false },
     AbiData { abi: Abi::AmdGpuKernel, name: "amdgpu-kernel", generic: false },
+    AbiData { abi: Abi::SpirKernel, name: "spir-kernel", generic: false, },
     AbiData { abi: Abi::EfiApi, name: "efiapi", generic: false },
     AbiData { abi: Abi::AvrInterrupt, name: "avr-interrupt", generic: false },
     AbiData {

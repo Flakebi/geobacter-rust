@@ -134,6 +134,14 @@ impl<'a> PostExpansionVisitor<'a> {
                     "avr-interrupt and avr-non-blocking-interrupt ABIs are experimental and subject to change"
                 );
             }
+            "spir-kernel" => {
+                gate_feature_post!(
+                    &self,
+                    abi_spir_kernel,
+                    span,
+                    "spir-kernel ABI is experimental and subject to change"
+                );
+            }
             "efiapi" => {
                 gate_feature_post!(
                     &self,

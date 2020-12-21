@@ -2570,6 +2570,7 @@ where
             AmdGpuKernel => Conv::AmdGpuKernel,
             AvrInterrupt => Conv::AvrInterrupt,
             AvrNonBlockingInterrupt => Conv::AvrNonBlockingInterrupt,
+            SpirKernel => Conv::SpirKernel,
 
             // These API constants ought to be more specific...
             Cdecl => Conv::C,
