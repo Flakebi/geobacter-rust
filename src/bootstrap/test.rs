@@ -1061,6 +1061,9 @@ impl Step for Compiletest {
         flags.push(format!("-Cdebuginfo={}", builder.config.rust_debuginfo_level_tests));
         flags.push("-Zunstable-options".to_string());
         flags.push(builder.config.cmd.rustc_args().join(" "));
+        if builder.config.rust_polly_self {
+            flags.push("-Zpolly".into());
+        }
 
         if let Some(linker) = builder.linker(target) {
             cmd.arg("--linker").arg(linker);

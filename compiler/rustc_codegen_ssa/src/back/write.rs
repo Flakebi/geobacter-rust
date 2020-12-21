@@ -107,6 +107,7 @@ pub struct ModuleConfig {
     pub vectorize_loop: bool,
     pub vectorize_slp: bool,
     pub merge_functions: bool,
+    pub polly: bool,
     pub inline_threshold: Option<usize>,
     pub new_llvm_pass_manager: bool,
     pub emit_lifetime_markers: bool,
@@ -239,6 +240,8 @@ impl ModuleConfig {
                     || sess.opts.optimize == config::OptLevel::Aggressive),
             vectorize_slp: !sess.opts.cg.no_vectorize_slp
                 && sess.opts.optimize == config::OptLevel::Aggressive,
+
+            polly: sess.opts.debugging_opts.polly,
 
             // Some targets (namely, NVPTX) interact badly with the
             // MergeFunctions pass. This is because MergeFunctions can generate

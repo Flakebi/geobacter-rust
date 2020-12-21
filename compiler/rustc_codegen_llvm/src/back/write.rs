@@ -537,7 +537,13 @@ pub(crate) unsafe fn optimize(
             let using_thin_buffers = config.bitcode_needed();
             if !config.no_prepopulate_passes {
                 llvm::LLVMAddAnalysisPasses(tm, fpm);
+                if config.polly {
+                    llvm::LLVMRustAddPollyPasses(fpm);
+                }
                 llvm::LLVMAddAnalysisPasses(tm, mpm);
+                if config.polly {
+                    llvm::LLVMRustAddPollyPasses(fpm);
+                }
                 let opt_level = to_llvm_opt_settings(opt_level).0;
                 let prepare_for_thin_lto = cgcx.lto == Lto::Thin
                     || cgcx.lto == Lto::ThinLocal
@@ -680,6 +686,7 @@ pub(crate) unsafe fn codegen(
             tm: &'ll llvm::TargetMachine,
             llmod: &'ll llvm::Module,
             no_builtins: bool,
+            polly: bool,
             f: F,
         ) -> R
         where
@@ -688,6 +695,9 @@ pub(crate) unsafe fn codegen(
             let cpm = llvm::LLVMCreatePassManager();
             llvm::LLVMAddAnalysisPasses(tm, cpm);
             llvm::LLVMRustAddLibraryInfo(cpm, llmod, no_builtins);
+            if polly {
+                llvm::LLVMRustAddPollyPasses(cpm);
+            }
             f(cpm)
         }
 
@@ -789,7 +799,7 @@ pub(crate) unsafe fn codegen(
             } else {
                 llmod
             };
-            with_codegen(tm, llmod, config.no_builtins, |cpm| {
+            with_codegen(tm, llmod, config.no_builtins, config.polly, |cpm| {
                 write_output_file(diag_handler, tm, cpm, llmod, &path, llvm::FileType::AssemblyFile)
             })?;
         }
@@ -799,7 +809,7 @@ pub(crate) unsafe fn codegen(
                 let _timer = cgcx
                     .prof
                     .generic_activity_with_arg("LLVM_module_codegen_emit_obj", &module.name[..]);
-                with_codegen(tm, llmod, config.no_builtins, |cpm| {
+                with_codegen(tm, llmod, config.no_builtins, config.polly, |cpm| {
                     write_output_file(
                         diag_handler,
                         tm,
