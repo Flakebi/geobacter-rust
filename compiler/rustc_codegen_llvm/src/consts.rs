@@ -11,7 +11,8 @@ use rustc_data_structures::const_cstr;
 use rustc_hir as hir;
 use rustc_hir::def_id::DefId;
 use rustc_hir::Node;
-use rustc_middle::middle::codegen_fn_attrs::{CodegenFnAttrFlags, CodegenFnAttrs};
+use rustc_middle::middle::codegen_fn_attrs::{CodegenFnAttrFlags, CodegenFnAttrs, SpirVImageTypeSpec,
+                                             SpirVAttrNode, SpirVTypeSpec};
 use rustc_middle::mir::interpret::{
     read_target_uint, Allocation, ErrorHandled, Pointer,
 };
@@ -23,6 +24,8 @@ use rustc_span::Span;
 use rustc_target::abi::{Align, HasDataLayout, LayoutOf, Primitive, Scalar, Size};
 use rustc_target::spec::AddrSpaceIdx;
 use tracing::debug;
+
+use std::ffi::CStr;
 
 pub fn const_alloc_to_llvm(cx: &CodegenCx<'ll, '_>, alloc: &Allocation) -> &'ll Value {
     let mut llvals = Vec::with_capacity(alloc.relocations().len() + 1);
@@ -344,6 +347,232 @@ impl CodegenCx<'ll, 'tcx> {
         self.instances.borrow_mut().insert(instance, g);
         g
     }
+
+    fn md_string(&self, s: &str) -> &'ll Value {
+        unsafe {
+            llvm::LLVMMDStringInContext(self.llcx, s.as_ptr() as *const _,
+                                        s.len() as _)
+        }
+    }
+    fn md_node(&self, values: &[&'ll Value]) -> &'ll Value {
+        unsafe {
+            llvm::LLVMMDNodeInContext(self.llcx,
+                                      values.as_ptr() as *const _,
+                                      values.len() as _)
+        }
+    }
+    fn set_metadata(&self, value: &'ll Value, kind: &'static str,
+                    node: &'ll Value)
+    {
+        assert!(kind.ends_with("\0"));
+
+        unsafe {
+            let kind_id =
+                llvm::LLVMRustGetMDKindID(self.llcx,
+                                          kind.as_ptr() as *const _);
+            llvm::LLVMRustGlobalObjectSetMetadata(value, kind_id, node);
+        }
+    }
+
+    pub fn add_amdgpu_attributes(&self, g: &'ll Value, attrs: &CodegenFnAttrs) {
+        const NUM_VGPRS_KIND: &'static CStr = unsafe {
+            CStr::from_bytes_with_nul_unchecked(b"amdgpu-num-vgpr\0")
+        };
+        const UNIFORM_WG_SIZE_KIND: &'static CStr = unsafe {
+            CStr::from_bytes_with_nul_unchecked(b"uniform-work-group-size\0")
+        };
+        const FLAT_WG_SIZE_KIND: &'static CStr = unsafe {
+            CStr::from_bytes_with_nul_unchecked(b"amdgpu-flat-work-group-size\0")
+        };
+
+        if self.tcx.sess.target.target.arch != "amdgpu" {
+            return;
+        }
+
+        let idx = llvm::AttributePlace::Function;
+
+        if let Some(num_vgprs) = attrs.amdgpu_num_vgpr {
+            let num_vgprs = format!("{}\0", num_vgprs);
+            let attr = unsafe {
+                CStr::from_bytes_with_nul_unchecked(num_vgprs.as_ref())
+            };
+            llvm::AddFunctionAttrStringValue(g, idx, NUM_VGPRS_KIND,
+                                             attr);
+        }
+        if let Some(uniform_wg_size) = attrs.amdgpu_uniform_workgroup_size {
+            let attr = if uniform_wg_size { "true\0" } else { "false\0" };
+            let attr = unsafe {
+                CStr::from_bytes_with_nul_unchecked(attr.as_ref())
+            };
+            llvm::AddFunctionAttrStringValue(g, idx, UNIFORM_WG_SIZE_KIND,
+                                             attr);
+        }
+        if let Some((start, end)) = attrs.amdgpu_flat_workgroup_size {
+            let s = format!("{},{}\0", start, end);
+            let attr = unsafe {
+                CStr::from_bytes_with_nul_unchecked(s.as_ref())
+            };
+            llvm::AddFunctionAttrStringValue(g, idx, FLAT_WG_SIZE_KIND,
+                                             attr);
+        }
+    }
+
+    pub fn add_spirv_metadata(&self, g: &'ll Value, attrs: &CodegenFnAttrs) {
+        const TYPE_SPEC_KIND: &'static str = "spirv.TypeSpec\0";
+        const STORAGE_CLASS_KIND: &'static str = "spirv.StorageClass\0";
+        const EXE_MODEL_KIND: &'static str = "spirv.ExecutionModel\0";
+        const EXE_MODE_KIND: &'static str = "spirv.ExecutionMode\0";
+        const BINDING_KIND: &'static str = "spirv.PipelineBinding\0";
+        const SET_KIND: &'static str = "spirv.PipelineDescSet\0";
+
+        let attrs = attrs.spirv.as_ref();
+        if attrs.is_none() { return; }
+        let attrs = attrs.unwrap();
+
+        if let Some(class) = attrs.storage_class.as_ref() {
+            let class_md = self.md_string(class);
+            self.set_metadata(g, STORAGE_CLASS_KIND, class_md);
+        }
+
+        if let Some(ref metadata) = attrs.metadata {
+            let spec_md = self.encode_spirv_attr_node(metadata);
+            self.set_metadata(g, TYPE_SPEC_KIND, spec_md);
+        }
+
+        if let Some(ref exe_model) = attrs.exe_model {
+            let md = self.md_string(exe_model);
+            self.set_metadata(g, EXE_MODEL_KIND, md);
+        }
+
+        if let Some(ref exe_mode) = attrs.exe_mode {
+            let md = self.encode_spirv_exe_mode_metadata(exe_mode);
+            self.set_metadata(g, EXE_MODE_KIND, md);
+        }
+
+        if let Some(id) = attrs.pipeline_binding {
+            let v = self.const_u32(id);
+            self.set_metadata(g, BINDING_KIND, v);
+        }
+        if let Some(id) = attrs.pipeline_descriptor_set {
+            let v = self.const_u32(id);
+            self.set_metadata(g, SET_KIND, v);
+        }
+    }
+    fn encode_decorations(&self, decorations: &[(String, Vec<u32>)]) -> &'ll Value {
+        let mut md_dec = Vec::with_capacity(decorations.len());
+        for &(ref decoration, ref literals) in decorations.iter() {
+            let mut tuple = Vec::with_capacity(1 + literals.len());
+            tuple.push(self.md_string(decoration));
+
+            for &literal in literals.iter() {
+                tuple.push(self.const_u32(literal));
+            }
+
+            md_dec.push(self.md_node(&tuple));
+        }
+
+        self.md_node(&md_dec)
+    }
+    fn encode_spirv_attr_node(&self, node: &SpirVAttrNode) -> &'ll Value {
+        let type_spec = self.encode_spirv_type_spec(&node.type_spec);
+        let decorations = self.encode_decorations(&node.decorations);
+        self.md_node(&[type_spec, decorations])
+    }
+    fn encode_spirv_type_spec(&self, spec: &SpirVTypeSpec) -> &'ll Value {
+        match spec {
+            &SpirVTypeSpec::Image(ref img) => {
+                self.encode_spirv_image_metadata(img)
+            },
+            &SpirVTypeSpec::SampledImage(ref img) => {
+                const KIND: &'static str = "SampledImage";
+                let kind = self.md_string(KIND);
+                let img = self.encode_spirv_image_metadata(img);
+                let values = [kind, img];
+                self.md_node(&values)
+            },
+            &SpirVTypeSpec::Struct(ref members) => {
+                let members = members.iter()
+                    .map(|m| {
+                        let node = self.encode_spirv_attr_node(&m.node);
+                        let decorations = self.encode_decorations(&m.decorations);
+                        self.md_node(&[node, decorations])
+                    });
+
+                let members: Vec<_> = Some(self.md_string("Struct")).into_iter()
+                    .chain(members)
+                    .collect();
+
+                self.md_node(&members)
+            },
+            &SpirVTypeSpec::Array(ref element) => {
+                self.md_node(&[
+                    self.md_string("Array"),
+                    self.encode_spirv_attr_node(&*element),
+                ])
+            },
+            &SpirVTypeSpec::Matrix { columns, rows, ref decorations, } => {
+                let type_spec = self.md_node(&[
+                    self.const_u32(columns),
+                    self.const_u32(rows),
+                ]);
+
+                let mut md_decorations = Vec::with_capacity(decorations.len());
+                for &(ref decoration, ref literals) in decorations.iter() {
+                    let decoration = self.md_string(decoration);
+                    if literals.len() == 0 {
+                        md_decorations.push(self.md_node(&[decoration]));
+                    } else {
+                        let mut tuple = Vec::with_capacity(1 + literals.len());
+                        tuple.push(decoration);
+
+                        for &literal in literals.iter() {
+                            tuple.push(self.const_u32(literal));
+                        }
+
+                        md_decorations.push(self.md_node(&tuple));
+                    }
+                }
+                let md_decorations = self.md_node(&md_decorations);
+                self.md_node(&[
+                    self.md_string("Matrix"),
+                    self.md_node(&[type_spec, md_decorations]),
+                ])
+            },
+        }
+    }
+    fn encode_spirv_image_metadata(&self, desc: &SpirVImageTypeSpec) -> &'ll Value {
+        const KIND: &'static str = "Image";
+
+        let arrayed = desc.arrayed as u32;
+        let multisampled = desc.multisampled as u32;
+
+        let kind = self.md_string(KIND);
+        let dim = self.md_string(&desc.dim);
+        let depth = self.const_u32(desc.depth);
+        let arrayed = self.const_u32(arrayed);
+        let multisampled = self.const_u32(multisampled);
+        let sampled = self.const_u32(desc.sampled);
+        let format = self.md_string(&desc.format);
+
+        let values = [kind, dim, depth, arrayed, multisampled, sampled, format];
+
+        self.md_node(&values)
+    }
+    fn encode_spirv_exe_mode_metadata(&self, mode: &[(String, Vec<u64>)]) -> &'ll Value {
+        let modes: Vec<_> = mode.iter()
+            .map(|&(ref kind, ref args)| {
+                let mut values = vec![self.md_string(kind)];
+
+                let args = args.iter()
+                    .map(|&v| self.const_u64(v) );
+                values.extend(args);
+
+                self.md_node(&values)
+            })
+            .collect();
+
+        self.md_node(&modes)
+    }
 }
 
 impl StaticMethods for CodegenCx<'ll, 'tcx> {
@@ -398,7 +627,12 @@ impl StaticMethods for CodegenCx<'ll, 'tcx> {
             let llvm_mutable = is_mutable || !self.type_is_freeze(ty);
 
             let llty = self.layout_of(ty).llvm_type(self);
-            let g = if val_llty == llty {
+            let g = if val_llty == llty || attrs.spirv.is_some() {
+                if attrs.spirv.is_some() {
+                    // This global is provided by environment (eg Vulkan driver),
+                    // but we can't use `extern "C"`, so it's hacked in here.
+                    llvm::LLVMRustSetLinkage(g, llvm::Linkage::ExternalLinkage);
+                }
                 g
             } else {
                 // If we created the global with the wrong type,
@@ -436,7 +670,9 @@ impl StaticMethods for CodegenCx<'ll, 'tcx> {
                 new_g
             };
             set_global_alignment(&self, g, self.align_of(ty));
-            llvm::LLVMSetInitializer(g, v);
+            if attrs.spirv.is_none() {
+                llvm::LLVMSetInitializer(g, v);
+            }
 
             // As an optimization, all shared statics which do not have interior
             // mutability are placed into read-only memory.
@@ -538,6 +774,8 @@ impl StaticMethods for CodegenCx<'ll, 'tcx> {
             if attrs.flags.contains(CodegenFnAttrFlags::USED) {
                 self.add_used_global(g);
             }
+
+            self.add_spirv_metadata(g, &attrs);
         }
     }
 

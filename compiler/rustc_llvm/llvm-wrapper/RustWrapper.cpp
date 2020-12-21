@@ -702,6 +702,10 @@ extern "C" LLVMValueRef LLVMRustMetadataAsValue(LLVMContextRef C, LLVMMetadataRe
   return wrap(MetadataAsValue::get(*unwrap(C), unwrap(MD)));
 }
 
+extern "C" unsigned LLVMRustGetMDKindID(LLVMContextRef C, const char* Str) {
+  return unwrap(C)->getMDKindID(Str);
+}
+
 extern "C" LLVMRustDIBuilderRef LLVMRustDIBuilderCreate(LLVMModuleRef M) {
   return new DIBuilder(*unwrap(M));
 }
@@ -1743,4 +1747,25 @@ LLVMRustBuildMinNum(LLVMBuilderRef B, LLVMValueRef LHS, LLVMValueRef RHS) {
 extern "C" LLVMValueRef
 LLVMRustBuildMaxNum(LLVMBuilderRef B, LLVMValueRef LHS, LLVMValueRef RHS) {
     return wrap(unwrap(B)->CreateMaxNum(unwrap(LHS),unwrap(RHS)));
+}
+extern "C" void
+LLVMRustGlobalObjectSetMetadata(LLVMValueRef GO, unsigned KindID,
+                                LLVMValueRef MD_)
+{
+    Value* MDV = unwrap(MD_);
+    Metadata* MD = nullptr;
+    if(auto* MAV = dyn_cast<MetadataAsValue>(MDV)) {
+        MD = MAV->getMetadata();
+    } else if(auto* C = dyn_cast<Constant>(MDV)) {
+        MD = ConstantAsMetadata::get(C);
+    } else {
+        MD = ValueAsMetadata::get(MDV);
+    }
+    MDNode* Node = dyn_cast<MDNode>(MD);
+    if (!Node) {
+        SmallVector<Metadata*, 1> Values = { MD };
+        Node = MDTuple::get(unwrap(GO)->getContext(),
+                            Values);
+    }
+    cast<GlobalObject>(unwrap(GO))->setMetadata(KindID, Node);
 }

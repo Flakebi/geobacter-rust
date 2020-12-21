@@ -14,6 +14,8 @@ pub struct CodegenFnAttrs {
     /// The `#[export_name = "..."]` attribute, indicating a custom symbol a
     /// function should be exported under
     pub export_name: Option<Symbol>,
+    /// Attributes related to SPIRV
+    pub spirv: Option<SpirVAttrs>,
     /// The `#[link_name = "..."]` attribute, indicating a custom symbol an
     /// imported function should be imported as. Note that `export_name`
     /// probably isn't set when this is set, this is for foreign items while
@@ -24,6 +26,13 @@ pub struct CodegenFnAttrs {
     /// be set when `link_name` is set. This is for foreign items with the
     /// "raw-dylib" kind.
     pub link_ordinal: Option<usize>,
+    /// AMDGPU specific VGPR constraint
+    pub amdgpu_num_vgpr: Option<usize>,
+    /// AMDGPU specific flag for when the grid size is guaranteed to be a multiple
+    /// of the workgroup size.
+    pub amdgpu_uniform_workgroup_size: Option<bool>,
+    /// AMDGPU specific flat workgroup size attribute.
+    pub amdgpu_flat_workgroup_size: Option<(usize, usize)>,
     /// The `#[target_feature(enable = "...")]` attribute and the enabled
     /// features (only enabled features are supported right now).
     pub target_features: Vec<Symbol>,
@@ -96,8 +105,12 @@ impl CodegenFnAttrs {
             inline: InlineAttr::None,
             optimize: OptimizeAttr::None,
             export_name: None,
+            spirv: None,
             link_name: None,
             link_ordinal: None,
+            amdgpu_num_vgpr: None,
+            amdgpu_uniform_workgroup_size: None,
+            amdgpu_flat_workgroup_size: None,
             target_features: vec![],
             linkage: None,
             link_section: None,
@@ -129,4 +142,49 @@ impl CodegenFnAttrs {
                 Some(_) => true,
             }
     }
+}
+
+#[derive(Clone, TyEncodable, TyDecodable, Debug, HashStable)]
+pub struct SpirVImageTypeSpec {
+    pub dim: String,
+    pub depth: u32,
+    pub arrayed: bool,
+    pub multisampled: bool,
+    pub sampled: u32,
+    pub format: String,
+}
+
+#[derive(Clone, TyEncodable, TyDecodable, Debug, HashStable)]
+pub struct SpirVStructMember {
+    pub node: SpirVAttrNode,
+    pub decorations: Vec<(String, Vec<u32>)>,
+}
+
+#[derive(Clone, TyEncodable, TyDecodable, Debug, HashStable)]
+pub enum SpirVTypeSpec {
+    Image(SpirVImageTypeSpec),
+    SampledImage(SpirVImageTypeSpec),
+    Struct(Vec<SpirVStructMember>),
+    Array(Box<SpirVAttrNode>),
+    Matrix {
+        columns: u32,
+        rows: u32,
+        decorations: Vec<(String, Vec<u32>)>,
+    },
+}
+
+#[derive(Clone, TyEncodable, TyDecodable, Debug, HashStable)]
+pub struct SpirVAttrNode {
+    pub type_spec: SpirVTypeSpec,
+    pub decorations: Vec<(String, Vec<u32>)>,
+}
+
+#[derive(Clone, Debug, Default, HashStable, TyEncodable, TyDecodable)]
+pub struct SpirVAttrs {
+    pub storage_class: Option<String>,
+    pub metadata: Option<SpirVAttrNode>,
+    pub exe_model: Option<String>,
+    pub exe_mode: Option<Vec<(String, Vec<u64>)>>,
+    pub pipeline_binding: Option<u32>,
+    pub pipeline_descriptor_set: Option<u32>,
 }

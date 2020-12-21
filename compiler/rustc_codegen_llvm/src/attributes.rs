@@ -346,6 +346,9 @@ pub fn from_fn_attrs(cx: &CodegenCx<'ll, 'tcx>, llfn: &'ll Value, instance: ty::
             );
         }
     }
+
+    cx.add_spirv_metadata(llfn, &codegen_fn_attrs);
+    cx.add_amdgpu_attributes(llfn, &codegen_fn_attrs);
 }
 
 pub fn provide(providers: &mut Providers) {
